@@ -6,8 +6,14 @@ import init
 import config
 import misc
 from dashd import DashDaemon
-from models import Superblock, Proposal, GovernanceObject
-from models import VoteSignals, VoteOutcomes, Transient
+from peewee import OperationalError
+try:
+    from models import Superblock, Proposal, GovernanceObject
+    from models import VoteSignals, VoteOutcomes, Transient
+except OperationalError as e:
+    if e.args == ('database is locked',):
+        sys.exit(0)
+    raise
 import socket
 from misc import printdbg
 import time
@@ -194,7 +200,7 @@ def process_args():
 
 
 if __name__ == '__main__':
-    atexit.register(cleanup)
+    #atexit.register(cleanup)
     signal.signal(signal.SIGINT, signal_handler)
 
     # ensure another instance of Sentinel is not currently running
@@ -202,14 +208,23 @@ if __name__ == '__main__':
     # assume that all processes expire after 'timeout_seconds' seconds
     timeout_seconds = 90
 
-    is_running = Transient.get(mutex_key)
-    if is_running:
-        printdbg("An instance of Sentinel is already running -- aborting.")
-        sys.exit(1)
-    else:
-        Transient.set(mutex_key, misc.now(), timeout_seconds)
+    is_db_locked = False
+    try:
+        is_running = Transient.get(mutex_key)
+        if is_running:
+            #printdbg("An instance of Sentinel is already running -- aborting.")
+            print("An instance of Sentinel is already running -- aborting.")
+            sys.exit(1)
+        else:
+            Transient.set(mutex_key, misc.now(), timeout_seconds)
 
-    # locked to this instance -- perform main logic here
-    main()
-
-    Transient.delete(mutex_key)
+        # locked to this instance -- perform main logic here
+        main()
+    except OperationalError as e:
+        if e.args == ('database is locked',):
+            is_db_locked = True
+        else:
+            raise
+    finally:
+        if not is_db_locked:
+            Transient.delete(mutex_key)
