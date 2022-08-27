@@ -745,7 +745,8 @@ def check_db_schema_version():
             peewee.OperationalError,
             peewee.ProgrammingError,
         ) as e:
-            print("[error] Could not drop tables: %s" % e)
+            if e.message != 'database is locked':
+                print("[error] Could not drop tables: %s" % e)
 
 
 def update_schema_version():
