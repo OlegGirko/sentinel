@@ -1,4 +1,4 @@
-peewee==2.8.3
+peewee>=2.8.3
 py==1.10.0
 pycodestyle==2.4.0
 pytest==3.0.1
