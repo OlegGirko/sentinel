@@ -104,9 +104,5 @@ def main():
         print("DashCore must be installed and configured, including JSONRPC access in dash.conf")
         sys.exit(1)
 
-    # deprecation warning
-    if not has_required_env_vars() and has_dash_conf():
-        print("deprecation warning: JSONRPC credentials should now be set using environment variables. Using dash.conf will be deprecated in the near future.")
-
 
 main()
